@@ -18,6 +18,6 @@ Mastery of a particular programming language is a very useful side effect of CS 
 
 ## Links
 
-- (CS61A Summer 2020)[https://inst.eecs.berkeley.edu/~cs61a/su20/]
-- (CS61A Fall 2022)[https://inst.eecs.berkeley.edu/~cs61a/fa22/]
-- (Textbook)[http://composingprograms.com/]
+- [CS61A Summer 2020](https://inst.eecs.berkeley.edu/~cs61a/su20/)
+- [CS61A Fall 2022](https://inst.eecs.berkeley.edu/~cs61a/fa22/)
+- [Textbook](http://composingprograms.com)
