@@ -85,20 +85,36 @@ In computer graphics, the RGB format is one of the most commonly used image form
 
 向量库包含一个 vec3 结构体，表示一个三维向量，包含三个 double 类型的成员变量 x、y、z，分别表示向量在三个方向上的分量。
 
-在这个向量库中，我们使用了一些函数来操作向量，这些函数包括：
+在这个向量库中，使用一些函数来操作向量
 
-vec3_init，用于初始化向量的值；
+- 向量的初始化
 
-vec3_negate，用于求向量的负值；
+- 返回向量的第 i 个元素
 
-vec3_add，用于将两个向量相加；
+- 反向的向量
 
-vec3_multiply，用于将向量数乘一个标量；
+- 加法
 
-vec3_divide，用于将向量除以一个标量；
+- 数乘 乘除
 
-vec3_length_squared，用于计算向量的长度的平方；
+- 向量点乘
 
-vec3_length，用于计算向量的长度。
+- 向量叉乘
+
+- 向量长度 长度的平方
+
+- 单位向量
+
+点 point3 是一个三维向量， RGB 颜色是三维向量
+
+## Ray
+
+一个 ray 结构体，两个 vet3 型的成员变量
+
+原点+方向向量 表示线
+
+线的参数方程 **P**(t) = **A** + t**b**
+
+**A**是原点，**b**是方向向量
 
 
