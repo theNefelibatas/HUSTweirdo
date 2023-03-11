@@ -214,7 +214,7 @@ int main(){
     if (fp != NULL){
         fprintf(fp,"P3\n%d %d\n255\n", width, height);
         for(int j = height -1 ; j >= 0; j--){
-            for(int i = 0; j < width; i++){
+            for(int i = 0; i < width; i++){
                 double u = (double)i / (width - 1);
                 double v = (double)j / (height - 1);
                 // direction rp = llc + u*hori + v*verti -origin
