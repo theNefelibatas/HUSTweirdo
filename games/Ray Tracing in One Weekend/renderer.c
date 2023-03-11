@@ -82,8 +82,8 @@ vec3 vec3_minus(const vec3 *v1, const vec3 *v2) {
 vec3 vec3_multiply(const vec3 *v, const double t) {
     vec3 u;
     u.x = v->x * t;
-    u.x = v->y * t;
-    u.x = v->z * t;
+    u.y = v->y * t;
+    u.z = v->z * t;
     return u;
 }
 
@@ -121,8 +121,10 @@ vec3 vec3_unit(vec3 *v){
 
 // 输出 RGB 序列
 void write_color(FILE *fp, const color pixel_color){
-    fprintf(fp,"%d %d %d\n",\
-    pixel_color.x, pixel_color.y, pixel_color.z);
+    int x = (int)(pixel_color.x * 255.999);
+    int y = (int)(pixel_color.y * 255.999);
+    int z = (int)(pixel_color.z * 255.999);
+    fprintf(fp,"%d %d %d\n", x, y, z);
 }
 
 
@@ -190,12 +192,12 @@ int main(){
     FILE *fp = fopen("Image.ppm","wb");
 
     // Image Size
-    const int width = 1600;
-    const int height = 900;
+    const int width = 1600/4;
+    const int height = 900/4;
 
     // camera
-    double view_height = 8.0;
-    double view_width = 4.5;
+    double view_height = 16.0 / 8;
+    double view_width = 9.0 / 8;
     double focal_length = 1.0; // 焦距
     point3 origin = point3_init(0,0,0);
     vec3 hori = vec3_init(view_width/2, 0, 0);
