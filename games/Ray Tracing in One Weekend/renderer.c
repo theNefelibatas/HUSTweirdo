@@ -2,15 +2,12 @@
 #include<math.h>
 #include<string.h>
 #include<stdbool.h>
-
-// debug
-int debug = 0;
+#include<stdlib.h>
+#include<time.h>
 
 // 3 维向量，元素类型为 double
 typedef struct vec3{
-    double x;
-    double y;
-    double z;
+    double x, y, z;
 }vec3;
 
 // RGB color and Point
@@ -97,7 +94,12 @@ vec3 vec3_divide(const vec3 *v, const double t) {
 
 // 向量点乘
 double vec3_dot_product(const vec3 *u, const vec3 *v) {
-    return u->x * v->x + u->y * v->y + u->z * v->z;
+    // debug
+    double x = u->x * v->x;
+    double y = u->y * v->y;
+    double z = u->z * v->z;
+    double dot_product = u->x * v->x + u->y * v->y + u->z * v->z;
+    return dot_product;
 }
 
 // 向量叉乘
@@ -111,22 +113,38 @@ vec3 vec3_cross_product(const vec3 *u, const vec3 *v){
 
 // 向量长度
 double vec3_length(const vec3 *v) {
-    return sqrt(vec3_dot_product(v, v));
+    double length = sqrt(vec3_dot_product(v, v));
+    return length;
 }
 
 // 单位向量
 vec3 vec3_unit(vec3 *v){
-    vec3 u = vec3_init(v->x/vec3_length(v),\
-    v->y/vec3_length(v), v->z/vec3_length(v) );
+    double vlen = vec3_length(v);
+    vec3 u = vec3_init(v->x/vlen,v->y/vlen, v->z/vlen);
     return u;
 }
 
+// 产生[0，1)的随机数
+inline double random_double(){
+    srand(time(NULL));
+    return rand()/(RAND_MAX + 1.0);
+}
+
 // 输出 RGB 序列
-void write_color(FILE *fp, const color pixel_color){
-    int x = (int)(pixel_color.x * 255.999);
-    int y = (int)(pixel_color.y * 255.999);
-    int z = (int)(pixel_color.z * 255.999);
-    fprintf(fp,"%d %d %d\n", x, y, z);
+inline double clamp(double x, double min, double max){
+    if (x < min) return min;
+    if (x > max) return max;
+    return x;
+}
+void write_color(FILE *fp, const color pixel_color, const int sample_per_pixel){
+    double scale = 1.0 / sample_per_pixel;
+    double x = clamp(pixel_color.x * scale, 0.0, 0.999);
+    double y = clamp(pixel_color.y * scale, 0.0, 0.999);
+    double z = clamp(pixel_color.z * scale, 0.0, 0.999);
+    int r = (int)(x * 255.999);
+    int g = (int)(y * 255.999);
+    int b = (int)(z * 255.999);
+    fprintf(fp,"%d %d %d\n", r, g, b);
 }
 
 
@@ -134,7 +152,7 @@ void write_color(FILE *fp, const color pixel_color){
 // 线的初始化
 ray ray_init(const point3 orgin, const vec3 direction){
     ray r;
-    r.orgin.x = orgin.x; r.orgin.y = orgin.y; r.orgin.y = orgin.y;
+    r.orgin.x = orgin.x; r.orgin.y = orgin.y; r.orgin.z = orgin.z;
     r.direction.x = direction.x;
     r.direction.y = direction.y;
     r.direction.z = direction.z;
@@ -142,7 +160,7 @@ ray ray_init(const point3 orgin, const vec3 direction){
 }
 
 // 线的交点
-point3 ray_inter(ray *r, int t){
+point3 ray_inter(ray *r, double t){
     point3 po;
     po.x = r->orgin.x + t * r->direction.x;
     po.y = r->orgin.y + t * r->direction.y;
@@ -150,69 +168,47 @@ point3 ray_inter(ray *r, int t){
     return po;
 }
 
-// 球
-/*
+// 球的交点
 double hit_sphere(const point3 center, double radius, const ray *r){
-    vec3 oc = point3_vec(r->orgin, center);
+    vec3 oc = point3_vec(center, r->orgin);
     double a = vec3_dot_product(&r->direction, &r->direction);
     double half_b = vec3_dot_product(&oc, &r->direction);
     double c = vec3_dot_product(&oc, &oc) -radius * radius;
     double delta = half_b * half_b - a*c;
-    if(delta < 0)
-        return -1.0;
-    else
-        return (-half_b - sqrt(delta)) / a;
+    double rate = 0;
+    if(delta<0) rate = -1.0;
+    else rate = (-half_b - sqrt(delta))/a;
+    return rate;
 }
 
 // 光线
 color ray_color(ray *r){
-    double t = hit_sphere(point3_init(0,0,-1), 0.5, r);
-    // debug
-    debug++;
-    color co;
-    if (t > 0.0){
-        vec3 n = ray_inter(r, t);
-        const vec3 center = vec3_init(0, 0, -1);
+    color co = vec3_init(1,0,0);
+    const vec3 center = vec3_init(0, 0, -1);
+    const vec3 center_ground = vec3_init(0, -100.25, -1);
+    double inter = hit_sphere(center, 0.25, r);
+    if (inter > 0.0){
+        point3 n = ray_inter(r, inter);
         const vec3 addi = vec3_init(1.0, 1.0, 1.0);
         n = vec3_minus(&n, &center);
         n = vec3_unit(&n);
+        // co = 0.5*(n+1)
         co = vec3_add(&n, &addi);
         co = vec3_multiply(&co, 0.5);
         return co;
     }
-    vec3 tem = r->direction;
-    vec3 unit_dir = vec3_unit(&tem);
-    t = 0.5 * (unit_dir.y + 1.0);
-    color co1 = color_init(1.0, 1.0, 1.0);
-    co1 = vec3_multiply(&co1, 1.0 - t);
-    color co2 = color_init(0.5, 0.7, 1.0);
-    co2 = vec3_multiply(&co2, t);
-    co = vec3_add(&co1, &co2);
-    return co;
-}
-*/
-
-// 球的交点
-bool hit_sphere(const point3 center, double radius, const ray *r){
-    vec3 oc = point3_vec(r->orgin, center);
-    double a = vec3_dot_product(&r->direction, &r->direction);
-    double half_b = vec3_dot_product(&oc, &r->direction);
-    double c = vec3_dot_product(&oc, &oc) -radius * radius;
-    double delta = half_b * half_b - a*c;
-    return (delta>0);
-}
-
-// 红球
-color ray_color(ray *r){
-    // debug
-    debug++;
-    color co = vec3_init(1,0,0);
-    if (hit_sphere(vec3_init(0,0,-1), 0.5, r)){
+    // ground
+    double inter_ground = hit_sphere(center_ground, 100, r);
+    if (inter_ground > 0.0){
+        co = vec3_init(0.1, 0.8, 0.1);
         return co;
     }
-    vec3 tem = r->direction;
-    vec3 unit_dir = vec3_unit(&tem);
-    double t = 0.5 * (unit_dir.y + 1.0);
+
+//    vec3 tem = r->direction;
+//    vec3 unit_dir = vec3_unit(&tem);
+    double t = 0.5 * (r->direction.y/0.5625 + 1.0); // 0.5625 = view_height / 2
+    // co = (1.0-t)*color(1.0,1.0,1.0) + t*color(0.5,0.7,1.0)
+    // co = color(1.0-0.5t, 1.0-0.3t, 1.0)
     color co1 = color_init(1.0, 1.0, 1.0);
     co1 = vec3_multiply(&co1, 1.0 - t);
     color co2 = color_init(0.5, 0.7, 1.0);
@@ -224,16 +220,17 @@ color ray_color(ray *r){
 // 主函数，输出
 int main(){
     // 写一个ppm文件
-    FILE *fp = fopen("Image.ppm","wb");
-    FILE *fptext = fopen("Image.txt","w"); // debug
+    FILE *fp = fopen("Image-7-2.ppm","wb");
+    FILE *fptext = fopen("Image-7-2.txt","w"); // debug
 
     // Image Size
     const int width = 1600/4;
     const int height = 900/4;
+    const int samples_per_pixel = 1000;
 
     // camera
-    double view_height = 16.0 / 8;
-    double view_width = 9.0 / 8;
+    double view_width = 16.0 / 8;
+    double view_height = 9.0 / 8;
     double focal_length = 1.0; // 焦距
     point3 origin = point3_init(0,0,0);
     vec3 hori = vec3_init(view_width/2, 0, 0);
@@ -250,25 +247,28 @@ int main(){
     if (fp != NULL){
         fprintf(fp,"P3\n%d %d\n255\n", width, height);
         fprintf(fptext,"P3\n%d %d\n255\n", width, height); // debug
-        for(int j = height; j > 0; j--){
-            for(int i = 1; i <= width; i++){
-                double u = 1.0 * i / width;
-                double v = 1.0 * j / height;
-                // direction rp = llc + u*hori + v*verti -origin
-                point3 temp = llc;
-                point3 htem = vec3_multiply(&hori, 2*u);
-                point3 vtem = vec3_multiply(&verti, 2*v);
-                temp = vec3_add(&temp, &htem);
-                temp = vec3_add(&temp, &vtem);
-                // rp ray和projection的交点，也是方向向量（camer在原点）
-                point3 rp = vec3_minus(&temp, &origin);
-                ray r = ray_init(origin, rp);
-                color pixel_color = ray_color(&r);
-                write_color(fp, pixel_color);
-                write_color(fptext, pixel_color); // debug
+        for(int j = height - 1; j >= 0; j--){
+            for(int i = 0; i < width; i++){
+                color pixel_color = color_init(0,0,0);
+                for (int s = 0; s <samples_per_pixel; s++){
+                    double u = 1.0 * (i + random_double()) / (width-1);
+                    double v = 1.0 * (j + random_double()) / (height-1);
+                    // direction rp = llc + u*hori + v*verti -origin
+                    point3 temp = llc;
+                    point3 htem = vec3_multiply(&hori, 2*u);
+                    point3 vtem = vec3_multiply(&verti, 2*v);
+                    temp = vec3_add(&temp, &htem);
+                    temp = vec3_add(&temp, &vtem);
+                    // rp ray和projection的交点，也是方向向量（camera在原点）
+                    point3 rp = vec3_minus(&temp, &origin);
+                    ray r = ray_init(origin, rp);
+                    color pixel_color_tem = ray_color(&r);
+                    pixel_color = vec3_add(&pixel_color, &pixel_color_tem);
+                }
+                write_color(fp, pixel_color, samples_per_pixel);
+                write_color(fptext, pixel_color, samples_per_pixel); // debug
             }
         }
     }
-    printf("%d",debug);
     return 0;
 }
