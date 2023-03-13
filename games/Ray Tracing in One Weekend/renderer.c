@@ -20,6 +20,13 @@ typedef struct ray{
     vec3 direction;
 }ray;
 
+// hit record
+typedef struct hit_record{
+    double t;
+    point3 p; // 交点
+    vec3 normal; // 交点法线
+}hit_record;
+
 // 坐标初始化
 point3 point3_init(const double x, const double y, const double z){
     point3 p;
@@ -182,24 +189,70 @@ double hit_sphere(const point3 center, double radius, const ray *r){
 }
 
 // 光线
+point3 random_in_unit_sphere(){
+    point3 p;
+    vec3 vec_1 = vec3_init(1,1,1);
+    do{
+        point3 rand_p = point3_init(random_double(), random_double(), random_double());
+        p = vec3_multiply(&rand_p, 2.0);
+        p = vec3_minus(&p, &vec_1);
+    }while (vec3_length(&p) >= 1.0);
+    return p;
+}
 color ray_color(ray *r){
-    color co = vec3_init(1,0,0);
-    const vec3 center = vec3_init(0, 0, -1);
-    const vec3 center_ground = vec3_init(0, -100.25, -1);
-    double inter = hit_sphere(center, 0.25, r);
+    // color co = vec3_init(1,0,0);
+    // const vec3 center = vec3_init(0, 0, -1);
+    // const vec3 center_ground = vec3_init(0, -100.25, -1);
+    // double inter = hit_sphere(center, 0.25, r);
+    static color co;
+    static vec3 center, center_ground;
+    center = vec3_init(0, 0, -1);
+    center_ground = vec3_init(0, -100.25, -1);
+    static vec3 addi;
+    addi = vec3_init(1.0, 1.0, 1.0);
+    static double inter;
+    inter = hit_sphere(center, 0.25, r);
     if (inter > 0.0){
-        point3 n = ray_inter(r, inter);
-        const vec3 addi = vec3_init(1.0, 1.0, 1.0);
-        n = vec3_minus(&n, &center);
-        n = vec3_unit(&n);
+        // point3 n = ray_inter(r, inter);
+        // const vec3 addi = vec3_init(1.0, 1.0, 1.0);
+        static point3 n;
+        n = ray_inter(r, inter);
+        // vec3 nor = vec3_minus(&n, &center);
+        static vec3 nor;
+        nor = vec3_minus(&n, &center);
+        nor = vec3_unit(&nor); // 交点法线
         // co = 0.5*(n+1)
-        co = vec3_add(&n, &addi);
+        // co = vec3_add(&n, &addi);
+        // co = vec3_multiply(&co, 0.5);
+        static ray ray_tem;
+        // point3 rand_p = random_in_unit_sphere();
+        static point3 rand_p;
+        rand_p = random_in_unit_sphere();
+        ray_tem.orgin = n;
+        ray_tem.direction = vec3_add(&nor, &rand_p);
+        co = ray_color(&ray_tem);
         co = vec3_multiply(&co, 0.5);
         return co;
     }
+
     // ground
-    double inter_ground = hit_sphere(center_ground, 100, r);
+    static double inter_ground;
+    inter_ground = hit_sphere(center_ground, 100, r);
     if (inter_ground > 0.0){
+        /*
+        static point3 n_ground;
+        n_ground = ray_inter(r, inter_ground);
+        static vec3 nor_ground;
+        nor_ground = vec3_minus(&n_ground, &center);
+        nor_ground = vec3_unit(&nor_ground); // 交点法线
+        static ray ray_tem;
+        // point3 rand_p = random_in_unit_sphere();
+        static point3 rand_p;
+        rand_p = random_in_unit_sphere();
+        ray_tem.orgin = n_ground;
+        ray_tem.direction = vec3_add(&nor_ground, &rand_p);
+        co = ray_color(&ray_tem);
+        co = vec3_multiply(&co, 0.5);*/
         co = vec3_init(0.1, 0.8, 0.1);
         return co;
     }
@@ -220,13 +273,13 @@ color ray_color(ray *r){
 // 主函数，输出
 int main(){
     // 写一个ppm文件
-    FILE *fp = fopen("Image-7-2.ppm","wb");
-    FILE *fptext = fopen("Image-7-2.txt","w"); // debug
+    FILE *fp = fopen("Image-8-1.ppm","wb");
+    FILE *fptext = fopen("Image-8-1.txt","w"); // debug
 
     // Image Size
     const int width = 1600/4;
     const int height = 900/4;
-    const int samples_per_pixel = 1000;
+    const int samples_per_pixel = 100;
 
     // camera
     double view_width = 16.0 / 8;
@@ -265,6 +318,12 @@ int main(){
                     color pixel_color_tem = ray_color(&r);
                     pixel_color = vec3_add(&pixel_color, &pixel_color_tem);
                 }
+                // pixel_color = vec3_divide(&pixel_color, (double)samples_per_pixel);
+                // int ir = (int)(255.999 * pixel_color.x);
+                // int ig = (int)(255.999 * pixel_color.y);
+                // int ib = (int)(255.999 * pixel_color.z);
+                // fprintf(fp,"%d %d %d\n", ir, ig, ib);
+                // fprintf(fptext,"%d %d %d\n", ir, ig, ib); // debug
                 write_color(fp, pixel_color, samples_per_pixel);
                 write_color(fptext, pixel_color, samples_per_pixel); // debug
             }
