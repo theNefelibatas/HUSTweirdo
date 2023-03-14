@@ -132,13 +132,13 @@ vec3 vec3_unit(vec3 *v){
 }
 
 // 产生[0，1)的随机数
-inline double random_double(){
+double random_double(){
     srand(time(NULL));
     return rand()/(RAND_MAX + 1.0);
 }
 
 // 输出 RGB 序列
-inline double clamp(double x, double min, double max){
+double clamp(double x, double min, double max){
     if (x < min) return min;
     if (x > max) return max;
     return x;
@@ -196,7 +196,8 @@ point3 random_in_unit_sphere(){
         point3 rand_p = point3_init(random_double(), random_double(), random_double());
         p = vec3_multiply(&rand_p, 2.0);
         p = vec3_minus(&p, &vec_1);
-    }while (vec3_length(&p) >= 1.0);
+        // p = vec3_divide(&p, 4.0); // debug
+    }while (vec3_length(&p) >= 1);
     return p;
 }
 color ray_color(ray *r){
@@ -273,8 +274,8 @@ color ray_color(ray *r){
 // 主函数，输出
 int main(){
     // 写一个ppm文件
-    FILE *fp = fopen("Image-8-1.ppm","wb");
-    FILE *fptext = fopen("Image-8-1.txt","w"); // debug
+    FILE *fp = fopen("renderer.ppm","wb");
+    FILE *fptext = fopen("renderer.txt","w"); // debug
 
     // Image Size
     const int width = 1600/4;
@@ -300,10 +301,11 @@ int main(){
     if (fp != NULL){
         fprintf(fp,"P3\n%d %d\n255\n", width, height);
         fprintf(fptext,"P3\n%d %d\n255\n", width, height); // debug
-        for(int j = height - 1; j >= 0; j--){
-            for(int i = 0; i < width; i++){
+        int i, j, s;
+        for(j = height - 1; j >= 0; j--){
+            for(i = 0; i < width; i++){
                 color pixel_color = color_init(0,0,0);
-                for (int s = 0; s <samples_per_pixel; s++){
+                for (s = 0; s <samples_per_pixel; s++){
                     double u = 1.0 * (i + random_double()) / (width-1);
                     double v = 1.0 * (j + random_double()) / (height-1);
                     // direction rp = llc + u*hori + v*verti -origin
